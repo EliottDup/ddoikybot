@@ -8,6 +8,7 @@ module.exports = {
         .addStringOption(option =>
             option.setName('name')
             .setDescription('The name for this channel')
+            .setMaxLength(255)
             .setRequired(true)
         )
         .addChannelOption(option => 
@@ -25,24 +26,23 @@ module.exports = {
         const errorEmbed = new EmbedBuilder()
             .setColor(0xff0000)
             .setTitle(`Registration failed`)
-            .setDescription(`Either ${channel} is already counting a streak, or there is already a streak started on this server named \`${name}\``);
+            .setDescription(`Possible reasons are:\n - ${channel} is already counting a streak.\n - there is already a streak started on this server named \`${name}\`\n - The bot has not been set up on this server.`);
 
         const successEmbed = new EmbedBuilder()
             .setColor(0x00ff00)
             .setTitle(`Registration Successful!`)
-            .setDescription(`The registration was successful, the `)
+            .setDescription(`The channel ${channel} has started the streak: ${name}`);
 
-    
-
-        dbUtils.canMakeChannel(interaction.guildId, channel.id, name).then(canMake => {
+        dbUtils.canMakeChannel(interaction.guildId, channel.id, name).catch(err =>{ 
+            throw err;
+        }).then(canMake => {
             if (canMake){
                 dbUtils.createChannel(interaction.guildId, channel.id, name);
-
+                interaction.reply({embeds: [successEmbed], flags: MessageFlags.Ephemeral});
+                console.log(`created streak ${name} in channel ${channel} in server ${interaction.guildId}`)
             } else {
                 interaction.reply({embeds: [errorEmbed], flags: MessageFlags.Ephemeral});
             }
         });
-
-        dbUtils.serverExists(interaction.guildId).then(v => console.log(v));
     }
 }

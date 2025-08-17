@@ -48,6 +48,7 @@ const fetchFirst = async (db, sql, params) => {
  *  | id            |   VARCHAR(20)    |
  *  | ddoiky_active |   BOOL           |
  *  | main_channel  |   VARCHAR(20)    |
+ *  | stats_message |   VARCHAR(20)    |
  *  |----------------------------------|
  *                                      
  *  |----------------------------------|
@@ -70,7 +71,8 @@ module.exports = {
         CREATE TABLE IF NOT EXISTS Servers (
             id VARCHAR(20) PRIMARY KEY,
             ddoiky_active BOOL,
-            main_channel VARCHAR(20)
+            main_channel VARCHAR(20),
+            stats_message VARCHAR(20)
         );`
 
         const create_channels_table = `
@@ -79,7 +81,7 @@ module.exports = {
             server_id VARCHAR(20) NOT NULL,
             name VARCHAR(255),
             streak INTEGER,
-            high_streal INTEGER
+            high_streak INTEGER
             last_message DATETIME,
             is_alive BOOL,
             FOREIGN KEY(server_id) REFERENCES Servers(id)

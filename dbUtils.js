@@ -21,21 +21,21 @@ module.exports = {
     createServer(serverID, mainChannelID){
         const createServerSQL = `
             INSERT INTO Servers (id, ddoiky_active, main_channel)
-            VALUES (?, ?, ?)`;
+                VALUES (?, ?, ?)`;
         return myDB.executesql(createServerSQL, [serverID, false, mainChannelID]);
     },
     createChannel(serverID, channelID, name){
         const createChannelSQL = `
             INSERT INTO Channels (id, server_id, name, streak, high_streak, is_alive)
-            VALUES (?, ?, ?, 0, 0, 0)
+                VALUES (?, ?, ?, 0, 0, 0)
         `
-        return myDB.executesql(createChannelSQL, channelID, serverID, name)
+        return myDB.executesql(createChannelSQL, [channelID, serverID, name])
     },
     updateServerMainChannel(serverID, mainChannelID){
         const updateSQL = `
             UPDATE Servers
-            SET main_channel = ?
-            WHERE id = ?`;
+                SET main_channel = ?
+                WHERE id = ?`;
         return myDB.executesql(updateSQL, [mainChannelID, serverID]);
     },
     serverExists(serverID){
@@ -54,8 +54,30 @@ module.exports = {
             SELECT 1 
             FROM Channels 
             WHERE id = ? 
-            OR (name = ? AND server_id = ?
-        ) as tmp`;
-        return myDB.fetchFirst(eval, [channelID, name, serverID]).then(v => v[0].tmp == 0);
+            OR (name = ? AND server_id = ?)) as tmp`;
+        return myDB.fetchFirst(eval, [channelID, name, serverID]).then(v => v[0].tmp == 0 && this.serverExists(serverID));
+    },
+    getStreaksData(serverID){
+        const query = `
+        SELECT * FROM Channels
+            WHERE server_id = ?`
+        return myDB.fetchAll(query, [serverID]);
+    },
+    getServerData(serverID){
+        const query = `
+        SELECT * FROM Servers
+            WHERE id = ?`
+        return myDB.fetchAll(query, [serverID]);
+    },
+    getAllServerData(serverID){
+        const streaksDataPromise = this.getStreaksData(serverID);
+        const serverDataPromise = this.getServerData(serverID);
+        return Promise.all([streaksDataPromise, serverDataPromise]).then(([streaksData, serverData]) => {
+            serverData.push({});
+            return {
+                server: serverData[0],
+                streaks: streaksData
+            };
+        });
     }
 }

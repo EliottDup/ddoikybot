@@ -1,6 +1,8 @@
 const { SlashCommandBuilder, CacheType, ChannelType, ChatInputCommandInteraction, InteractionContextType, MessageFlags, EmbedBuilder } = require("discord.js");
 const { getServerDDoikyActive } = require("../../dbUtils");
 const dbUtils = require("../../dbUtils");
+const { ensureServerExists } = require("../../utils");
+const utils = require("../../utils");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -20,29 +22,32 @@ module.exports = {
         .setDescription('registers a user into a channel')
         .setContexts(InteractionContextType.Guild),
     async execute(/** @type {ChatInputCommandInteraction<CacheType>} **/ interaction){
-        const name = interaction.options.getString('name');
-        const channel = interaction.options.getChannel('channel') ?? interaction.channel;
+        ensureServerExists(interaction, (interaction) => {
+            const name = interaction.options.getString('name');
+            const channel = interaction.options.getChannel('channel') ?? interaction.channel;
 
-        const errorEmbed = new EmbedBuilder()
-            .setColor(0xff0000)
-            .setTitle(`Registration failed`)
-            .setDescription(`Possible reasons are:\n - ${channel} is already counting a streak.\n - there is already a streak started on this server named \`${name}\`\n - The bot has not been set up on this server.`);
+            const errorEmbed = new EmbedBuilder()
+                .setColor(0xff0000)
+                .setTitle(`Registration failed`)
+                .setDescription(`Possible reasons are:\n - ${channel} is already counting a streak.\n - there is already a streak started on this server named \`${name}\`\n - The bot has not been set up on this server.`);
 
-        const successEmbed = new EmbedBuilder()
-            .setColor(0x00ff00)
-            .setTitle(`Registration Successful!`)
-            .setDescription(`The channel ${channel} has started the streak: ${name}`);
+            const successEmbed = new EmbedBuilder()
+                .setColor(0x00ff00)
+                .setTitle(`Registration Successful!`)
+                .setDescription(`The channel ${channel} has started the streak: ${name}`);
 
-        dbUtils.canMakeChannel(interaction.guildId, channel.id, name).catch(err =>{ 
-            throw err;
-        }).then(canMake => {
-            if (canMake){
-                dbUtils.createChannel(interaction.guildId, channel.id, name);
-                interaction.reply({embeds: [successEmbed], flags: MessageFlags.Ephemeral});
-                console.log(`created streak ${name} in channel ${channel} in server ${interaction.guildId}`)
-            } else {
-                interaction.reply({embeds: [errorEmbed], flags: MessageFlags.Ephemeral});
-            }
+            dbUtils.canMakeChannel(interaction.guildId, channel.id, name).catch(err =>{ 
+                throw err;
+            }).then(canMake => {
+                if (canMake){
+                    dbUtils.createChannel(interaction.guildId, channel.id, name);
+                    interaction.reply({embeds: [successEmbed], flags: MessageFlags.Ephemeral});
+                    console.log(`created streak ${name} in channel ${channel} in server ${interaction.guildId}`)
+                    utils.updateStatsMessage(interaction.guildId, interaction.client);
+                } else {
+                    interaction.reply({embeds: [errorEmbed], flags: MessageFlags.Ephemeral});
+                }
+            });
         });
     }
 }

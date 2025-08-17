@@ -1,12 +1,13 @@
 const { SlashCommandBuilder, ChannelType, PermissionFlagsBits, ChatInputCommandInteraction, InteractionContextType, CacheType, TextChannel, MessageFlags, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js")
 const db = require('../../myDB');
 const dbUtils = require("../../dbUtils");
+const utils = require("../../utils");
 
 
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('initialize')
+        .setName('initialise')
         .addChannelOption(option => 
             option.addChannelTypes(ChannelType.GuildText)
             .setName('main-channel')
@@ -43,6 +44,7 @@ module.exports = {
                 dbUtils.createServer(interaction.guildId, channel.id);
                 interaction.reply({embeds: [successEmbed], flags: MessageFlags.Ephemeral});
                 console.log(`added server ${interaction.guildId} to database`);
+                utils.updateStatsMessage(interaction.guildId, interaction.client);
             } else{
                 const response = await interaction.reply({embeds: [failureEmbed], flags: MessageFlags.Ephemeral, components: [row], withResponse: true});
 
@@ -52,6 +54,7 @@ module.exports = {
                     if (confirmation.customId === "move") {
                         dbUtils.updateServerMainChannel(interaction.guildId, channel.id);
                         await interaction.editReply({embeds: [successEmbed], components: []});
+                        utils.updateStatsMessage(interaction.guildId, interaction.client);
                     }
                     else {
                         await interaction.editReply({embeds: [failureEmbed.setDescription("Action aborted")], components: []})

@@ -1,0 +1,6 @@
+{
+    "--comment": "this file should be renamed to config.json",
+	"token": "Your bot token here (should be super secret)",
+    "clientId": "the bot's application id",
+    "guildId": "the server id of the server where the deploy commands function is going to"
+}

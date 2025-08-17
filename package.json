@@ -1,0 +1,25 @@
+{
+  "name": "ddoikybot",
+  "version": "0.0.0",
+  "description": "bot for ddoiky",
+  "main": "index.js",
+  "scripts": {
+    "test": "test",
+    "start": "node index.js",
+    "deploy-global": "node deploy-global-commands.js",
+    "deploy-test": "node deploy-commands.js"
+  },
+  "author": "c0der23",
+  "license": "ISC",
+  "dependencies": {
+    "cron": "^4.3.3",
+    "discord.js": "^14.21.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "eslint": "^9.33.0",
+    "globals": "^16.3.0"
+  },
+  "type": "commonjs"
+}

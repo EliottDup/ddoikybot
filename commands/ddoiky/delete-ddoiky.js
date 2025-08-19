@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, InteractionContextType, MessageFlags, EmbedBuilder } = require("discord.js");
 const { deleteServer } = require("../../dbUtils");
 const dbUtils = require("../../dbUtils");
-const { ensureServerExists } = require("../../utils");
+const { ensureServerExists, updateStatsMessage } = require("../../utils");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -19,13 +19,13 @@ module.exports = {
         ).setContexts(InteractionContextType.Guild),
 
     async execute(/** @type {ChatInputCommandInteraction<CacheType>} **/ interaction){
-        ensureServerExists(interaction, (interaction) => {
+        ensureServerExists(interaction, () => {
             
             const failureEmbed = new EmbedBuilder().setColor(0xff0000)
             .setTitle("Deletion denied")
             .setDescription("Deletion aborted, `serverID` and/or `confirmation` are invalid.")
             .setAuthor({name: interaction.user.displayName, iconURL: interaction.user.avatarURL()});
-            
+    
             const successEmbed = new EmbedBuilder().setColor(0xff0000)
             .setTitle("Deletion Successful")
             .setDescription("No more ddoiky :(")
@@ -35,7 +35,6 @@ module.exports = {
             const confirmation = interaction.options.getString("confirmation");
             if (serverid === interaction.guildId && confirmation == "confirm"){
                 deleteServer(interaction.guildId);
-                interaction.reply({embeds: [successEmbed]});
             }
             else{
                 interaction.reply({embeds: [failureEmbed]});

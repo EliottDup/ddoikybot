@@ -20,7 +20,7 @@ module.exports = {
         ).setContexts(InteractionContextType.Guild),
 
     async execute(/** @type {ChatInputCommandInteraction<CacheType>} **/ interaction){
-        ensureChannelExists(interaction, interaction => {
+        ensureChannelExists(interaction, () => {
             const failureEmbed = new EmbedBuilder().setColor(0xff0000)
             .setTitle("Deletion denied")
             .setDescription("Deletion aborted, `channelid` and/or `confirmation` are invalid.")
@@ -36,8 +36,9 @@ module.exports = {
             const channelid = interaction.options.getString("channelid");
             const confirmation = interaction.options.getString("confirmation");
             if (channelid === interaction.channelId && confirmation == "confirm"){
-                deleteStreak(interaction.channelId);
-                interaction.reply({embeds: [successEmbed]});
+                deleteStreak(interaction.channelId).then(() => {
+                    utils.updateStatsMessage(interaction.guild).then(() => interaction.reply({embeds: [successEmbed]}));
+                });
             }
             else{
                 interaction.reply({embeds: [failureEmbed]});

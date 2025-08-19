@@ -1,6 +1,6 @@
 {
   "name": "ddoikybot",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "bot for ddoiky",
   "main": "index.js",
   "scripts": {

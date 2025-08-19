@@ -41,10 +41,9 @@ module.exports = {
         
         dbUtils.serverExists(interaction.guildId).then(async exists => {
             if (!exists){
-                dbUtils.createServer(interaction.guildId, channel.id);
+                dbUtils.createServer(interaction.guildId, channel.id).then(() => utils.updateStatsMessage(interaction.guild));
                 interaction.reply({embeds: [successEmbed], flags: MessageFlags.Ephemeral});
                 console.log(`added server ${interaction.guildId} to database`);
-                utils.updateStatsMessage(interaction.guildId, interaction.client);
             } else{
                 const response = await interaction.reply({embeds: [failureEmbed], flags: MessageFlags.Ephemeral, components: [row], withResponse: true});
 
@@ -52,9 +51,8 @@ module.exports = {
                     const confirmation = await response.resource.message.awaitMessageComponent({time: 60_000});
                     
                     if (confirmation.customId === "move") {
-                        dbUtils.updateServerMainChannel(interaction.guildId, channel.id);
+                        dbUtils.updateServerMainChannel(interaction.guildId, channel.id).then(() => utils.updateStatsMessage(interaction.guild));
                         await interaction.editReply({embeds: [successEmbed], components: []});
-                        utils.updateStatsMessage(interaction.guildId, interaction.client);
                     }
                     else {
                         await interaction.editReply({embeds: [failureEmbed.setDescription("Action aborted")], components: []})

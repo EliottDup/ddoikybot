@@ -22,7 +22,7 @@ module.exports = {
         .setDescription('registers a user into a channel')
         .setContexts(InteractionContextType.Guild),
     async execute(/** @type {ChatInputCommandInteraction<CacheType>} **/ interaction){
-        ensureServerExists(interaction, (interaction) => {
+        ensureServerExists(interaction, () => {
             const name = interaction.options.getString('name');
             const channel = interaction.options.getChannel('channel') ?? interaction.channel;
 
@@ -43,7 +43,7 @@ module.exports = {
                     dbUtils.createChannel(interaction.guildId, channel.id, name);
                     interaction.reply({embeds: [successEmbed], flags: MessageFlags.Ephemeral});
                     console.log(`created streak ${name} in channel ${channel} in server ${interaction.guildId}`)
-                    utils.updateStatsMessage(interaction.guildId, interaction.client);
+                    utils.updateStatsMessage(interaction.guild);
                 } else {
                     interaction.reply({embeds: [errorEmbed], flags: MessageFlags.Ephemeral});
                 }

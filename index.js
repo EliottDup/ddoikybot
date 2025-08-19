@@ -3,7 +3,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
 const { token } = require('./config.json');
-const myDB = require('./myDB')
+const myDB = require('./myDB');
+const { dateToString, theCheckening } = require('./utils');
+const { CronJob } = require('cron');
 
 myDB.createConnection();
 
@@ -63,3 +65,13 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 client.login(token);
+//Start cron job :))
+const job = new CronJob(
+    "0 0 5 * * *",
+    function () {
+        theCheckening(client.guilds);
+    },
+    null,
+    true,
+    "Europe/Amsterdam"
+)

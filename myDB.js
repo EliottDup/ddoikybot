@@ -59,7 +59,7 @@ const fetchFirst = async (db, sql, params) => {
  *  | name          |   VARCHAR(255)   |
  *  | streak        |   INTEGER        |
  *  | high_streak   |   INTEGER        |
- *  | last_message  |   DATETIME       |
+ *  | draw_counter  |   INTEGER        |
  *  | is_alive      |   BOOL           |
  *  |----------------------------------|
 **/
@@ -81,8 +81,8 @@ module.exports = {
             server_id VARCHAR(20) NOT NULL,
             name VARCHAR(255),
             streak INTEGER,
-            high_streak INTEGER
-            last_message DATETIME,
+            high_streak INTEGER,
+            draw_counter INTEGER,
             is_alive BOOL,
             FOREIGN KEY(server_id) REFERENCES Servers(id)
         );`

@@ -1,18 +1,66 @@
-const { EmbedBuilder, MessageFlags, Channel } = require("discord.js");
+const { EmbedBuilder, MessageFlags, Guild, GuildManager, GuildBasedChannel } = require("discord.js");
 const dbUtils = require("./dbUtils");
+const cron = require("cron");
 
+function ensureServerExists(interaction, callback){
+    dbUtils.serverExists(interaction.guildId).then( exists => {
+        if (!exists){
+            interaction.reply({embeds: [new EmbedBuilder().setColor(0xffff00).setTitle("DDoiky Not Setup").setDescription("Use `/initialise` to setup ddoikyBot")], flags:MessageFlags.Ephemeral})
+        }
+        else{
+            callback()
+        }
+    });
+}
+
+async function checkServer(server, /** @type {Guild} */ guild){
+    dbUtils.getAllServerChannels(server.id).then(channels => {
+        channels.forEach(channel => 
+            guild.channels.fetch(channel.id).then(dcChannel => {
+                checkChannel(channel, dcChannel)
+            })
+        );
+    });
+}
+
+function checkChannel(channel, /**@type {GuildBasedChannel} */ dcChannel){
+    if (channel.draw_counter <= 0){ //DEAD LMAO
+        const deathEmbed = new EmbedBuilder()
+            .setColor(0xff0000)
+            .setTitle(`${channel.name}'s streak has been lost!`)
+            .setDescription(`The streak was ${channel.streak} days!`);
+
+        channel.is_alive = false;
+        channel.streak = 0;
+        dcChannel.send({embeds: [deathEmbed]});
+    }
+    else {
+        channel.draw_counter -= 1;
+    }
+    dbUtils.updateChannel(channel);
+}
+
+function updateStatsMessage(/** @type {Guild} */ guild){
+    return dbUtils.getServerStatMessage(guild).then(msg => {
+        if (msg == null) return this.createStatsMessage(guild);
+        return this.getStatusEmbeds(guild.id).then(embeds => {
+            return msg.edit({embeds:embeds});
+        });
+    }).catch(console.error);
+}
 
 module.exports = {
     getStatusEmbeds(serverID){
         return dbUtils.getAllServerData(serverID).then( data => {
-            console.log(data);
             if (!data.server.id){
                 return [new EmbedBuilder().setColor(0xffff00).setTitle("DDoiky Not Setup").setDescription("Use `/initialise` to setup ddoikyBot")]
             }
+
             const statsEmbed = new EmbedBuilder().setColor(0xffff00)
             .setTitle("Statistics")
             .setDescription(`DDoiky Status: ${data.server.ddoiky_active == 1 ? `active` : `inactive` }`)
-            .addFields({name: "Last Updated:", value: `<t:${Math.floor(Date.now()/1000)}:R>`});
+            .addFields( {name: "Last Updated:", value: `<t:${Math.floor(Date.now()/1000)}:R>`},
+                        {name: "Deadline:", value: `<t:${Math.floor(Math.floor((Date.now() + cron.timeout("0 0 5 * * *"))/1000))}:R>`});
         
             let allEmbeds = [statsEmbed];
         
@@ -35,33 +83,42 @@ module.exports = {
             return allEmbeds;
         });
     },
-    updateStatsMessage(serverID, client){
-        return dbUtils.getServerMainChannel(serverID, client).then(channel => {
-            console.log(channel);
-            if (channel == null) return null;
-            return this.getStatusEmbeds(serverID, client).then(embeds => {
-                return channel.send({contents: "@silent", embeds: embeds});
-            })
-        })
+    updateStatsMessage,
+    createStatsMessage(/** @type {Guild} */ guild){
+        return dbUtils.getServerMainChannel(guild).then( c => {
+            if (c) return this.getStatusEmbeds(guild.id).then(embeds => {
+                return c.send({embeds: embeds})
+            });
+            return null;
+        }).catch(console.error);
     },
     ensureServerExists(interaction, callback){
-        dbUtils.serverExists(interaction.guildId).then( exists => {
-            if (!exists){
-                interaction.reply({embeds: [new EmbedBuilder().setColor(0xffff00).setTitle("DDoiky Not Setup").setDescription("Use `/initialise` to setup ddoikyBot")], flags:MessageFlags.Ephemeral})
-            }
-            else{
-                callback(interaction)
-            }
-        });
+        ensureServerExists(interaction, callback);
     },
     ensureChannelExists(interaction, callback){
+        ensureServerExists(interaction, () => {
             dbUtils.channelExists(interaction.channelId).then( exists => {
-            if (!exists){
-                interaction.reply({embeds: [new EmbedBuilder().setColor(0xffff00).setTitle("DDoiky Not Setup In This Channel").setDescription("Use `/register` to setup ddoikyBot in this channel")], flags:MessageFlags.Ephemeral})
-            }
-            else{
-                callback(interaction)
-            }
+                if (!exists){
+                    interaction.reply({embeds: [new EmbedBuilder().setColor(0xffff00).setTitle("DDoiky Not Setup In This Channel").setDescription("Use `/register` to setup ddoikyBot in this channel")], flags:MessageFlags.Ephemeral})
+                }
+                else{
+                    callback()
+                }
+            });
+        });
+    },
+    // YYYY-MM-DD HH:MM
+    dateToString(/** @type {Date} */ date){
+        const padL = (nr) => `${nr}`.padStart(2, `0`);
+        return [date.getFullYear(), padL(date.getMonth()), padL(date.getDate())].join('-') + ' ' + [padL(date.getHours()), padL(date.getMinutes())].join(':');
+    },
+    theCheckening(/** @type {GuildManager} */ guildManager){
+        dbUtils.getAllServers().then(servers => {
+            servers.forEach(server => 
+                guildManager.fetch(server.id).then(guild => {
+                    checkServer(server, guild).then(() => updateStatsMessage(guild));
+                })
+            );
         });
     },
 }

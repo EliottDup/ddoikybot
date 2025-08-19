@@ -1,29 +1,31 @@
-const { Client } = require("discord.js");
+const { Guild } = require("discord.js");
 const myDB = require("./myDB");
-const { GuildMessageManager } = require("discord.js");
+const utils = require("./utils");
 
 module.exports = {
-    getServerMainChannel(serverID, /** @type {Client} **/ client){
-        const getMainChannelQuery = `SELECT main_channel FROM Servers WHERE id = ?`;
-
-        return myDB.fetchFirst(getMainChannelQuery, [serverID]).then(value => {
-            if (value.length == 0) return null;
-            const id = value[0].main_channel;
-            return client.channels.fetch(id);
-        });
+    getServerMainChannel(/** @type {Guild} */ guild){
+        const query = `SELECT main_channel FROM Servers WHERE id = ?`;
+        
+        return myDB.fetchFirst(query, [guild.id]).then(v => v[0] ? guild.channels.fetch(v[0].main_channel) : null)
     },
-    getServerStatMessage(serverID, /** @type {Client} **/ client){
-        const query = `SELECT stats_message FROM Servers WHERE id = ?`;
+    getServerStatMessage(/**@type {Guild} */ guild){
+        return this.getServerMainChannel(guild).then(mainChannel =>{
+            if (!mainChannel) return null;
+            const query = `SELECT stats_message FROM Servers WHERE id = ?`;
 
-        return myDB.fetchFirst(query, serverID).then(msg => {
-            if (msg.length == 0) return null;
-            return this.getServerMainChannel(serverID, client).then(channel => {
-                if (channel == null) return null;
-                /** @type {GuildMessageManager} */
-                let messages = channel.messages;
-                return messages.fetch(msg);
+            return myDB.fetchFirst(query, [guild.id]).then(m => {
+                if (m[0]){
+                    return mainChannel.messages.fetch(m[0].stats_message).then(messages => messages.first() ?? null);
+                }
+                return null;
             })
         })
+    },
+    setServerStatMessage(server_id, msg){
+        const query = `UPDATE Servers
+            SET stats_message = ?
+            WHERE id = ?`;
+        return myDB.executesql(query, [msg, server_id]); 
     },
     getServerDDoikyActive(serverID){
         const getDDoiky = `SELECT ddoiky_active FROM Servers WHERE id = ?`
@@ -40,8 +42,8 @@ module.exports = {
     },
     createChannel(serverID, channelID, name){
         const createChannelSQL = `
-            INSERT INTO Channels (id, server_id, name, streak, high_streak, is_alive)
-                VALUES (?, ?, ?, 0, 0, 0)
+            INSERT INTO Channels (id, server_id, name, streak, high_streak, draw_counter, is_alive)
+                VALUES (?, ?, ?, 0, 0, 0, 0)
         `
         return myDB.executesql(createChannelSQL, [channelID, serverID, name])
     },
@@ -81,7 +83,7 @@ module.exports = {
             OR (name = ? AND server_id = ?)) as tmp`;
         return myDB.fetchFirst(eval, [channelID, name, serverID]).then(v => v[0].tmp == 0 && this.serverExists(serverID));
     },
-    getStreaksData(serverID){
+    getAllServerChannels(serverID){
         const query = `
         SELECT * FROM Channels
             WHERE server_id = ?`
@@ -94,7 +96,7 @@ module.exports = {
         return myDB.fetchAll(query, [serverID]);
     },
     getAllServerData(serverID){
-        const streaksDataPromise = this.getStreaksData(serverID);
+        const streaksDataPromise = this.getAllServerChannels(serverID);
         const serverDataPromise = this.getServerData(serverID);
         return Promise.all([streaksDataPromise, serverDataPromise]).then(([streaksData, serverData]) => {
             serverData.push({});
@@ -117,11 +119,50 @@ module.exports = {
         const querys = `DELETE FROM Servers WHERE id = ?`;
         const queryc = `DELETE FROM Channels WHERE server_id = ?`;
 
-        myDB.executesql(querys, [serverID]);
-        myDB.executesql(queryc, [serverID]);
+        return Promise.all([myDB.executesql(querys, [serverID]), myDB.executesql(queryc, [serverID])]);
     },
     deleteStreak(channelID){
-        const queryc = `DELETE FROM Channels WHERE server_id = ?`;
-        myDB.executesql(queryc, [channelID]);
+        const queryc = `DELETE FROM Channels WHERE id = ?`;
+        return myDB.executesql(queryc, [channelID]);
+    },
+    setStreak(channelID, streak){
+        const com = `
+        UPDATE Channels
+        SET streak = ?, 
+            high_streak = MAX(high_streak, ?)
+        WHERE id = ?`
+        return myDB.executesql(com, [streak, streak, channelID]);
+    },
+    incrementStreakAndDrawCounter(channelID){
+        const com = `
+        UPDATE Channels
+        SET draw_counter = draw_counter + 1,
+            streak = streak + 1, 
+            high_streak = MAX(high_streak, streak + 1)
+        WHERE id = ?`;
+        return myDB.executesql(com, [channelID]);
+    },
+    getDrawCounter(channelID){
+        const query = `
+        SELECT draw_counter, streak 
+        FROM Channels
+        WHERE id = ?`;  
+        return myDB.fetchFirst(query, [channelID]).then(res => res[0] ? {counter: res[0].draw_counter, streak: res[0].streak} : null);
+    },
+    getAllServers(){
+        const query = `
+        SELECT *
+        FROM Servers`;
+        return myDB.fetchAll(query);
+    },
+    updateChannel(channel){
+        const query = `
+        UPDATE Channels
+        SET
+            streak = ?
+            draw_counter = ?
+            is_alive = ?
+        WHERE id = ?`
+        return myDB.executesql(query, [channel.streak, channel.draw_counter, channel.is_alive, channel.id]);
     }
 }

@@ -74,8 +74,7 @@ module.exports = {
             let allFields = [];
             data.streaks.forEach(streak => {
                 allFields.push(
-                    { name: '\u200B', value: '\u200B' },
-                    { name: streak.name, value: streak.is_alive == 1 ? 'Alive' : 'Dead', inline: true },
+                    { name: streak.name, value: data.server.ddoiky_active==1 ? streak.is_alive == 1 ? 'Alive' : 'Dead' : "", inline: true },
                     { name: 'Streak', value: streak.streak.toString(), inline: true },
                     { name: 'High Score', value: streak.high_streak.toString(), inline: true },
                 )
@@ -84,7 +83,8 @@ module.exports = {
             while (allFields.length > 0){
                 const newEmbed = new EmbedBuilder()
                     .setColor(0xffff00)
-                    .addFields(allFields.splice(Math.max(allFields.length - 4*6, 0)).splice(1));
+                    .setTitle(".                                                           .")
+                    .addFields(allFields.splice(Math.max(allFields.length - 4*8, 0)));
                 allEmbeds.push(newEmbed);
             }
             return allEmbeds;

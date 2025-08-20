@@ -84,7 +84,7 @@ module.exports = {
                 const newEmbed = new EmbedBuilder()
                     .setColor(0xffff00)
                     .setTitle(".                                                           .")
-                    .addFields(allFields.splice(Math.max(allFields.length - 4*8, 0)));
+                    .addFields(allFields.splice(Math.max(allFields.length - 3*8, 0)));
                 allEmbeds.push(newEmbed);
             }
             return allEmbeds;

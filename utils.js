@@ -31,8 +31,8 @@ function checkChannel(channel, /**@type {GuildBasedChannel} */ dcChannel){
             .setDescription(`The streak was ${channel.streak} days!`);
 
         channel.is_alive = false;
+        if (channel.streak > 0) dcChannel.send({embeds: [deathEmbed]});
         channel.streak = 0;
-        dcChannel.send({embeds: [deathEmbed]});
     }
     else {
         channel.draw_counter -= 1;

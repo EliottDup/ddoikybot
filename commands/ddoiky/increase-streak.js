@@ -11,7 +11,6 @@ module.exports = {
     async execute(/** @type {ChatInputCommandInteraction<CacheType>} */ interaction){
         utils.ensureChannelExists(interaction, () => {
             dbUtils.getDrawCounter(interaction.channelId).then(d => {
-                console.log(d.streak + 1);
                 const alreadyIncrementedEmbed = new EmbedBuilder()
                     .setColor(0xffff00)
                     .setTitle("Streak already increased today.");

@@ -56,13 +56,20 @@ module.exports = {
                 return [new EmbedBuilder().setColor(0xffff00).setTitle("DDoiky Not Setup").setDescription("Use `/initialise` to setup ddoikyBot")]
             }
 
+            const infoEmbed = new EmbedBuilder()
+                .setColor(0x00ff00)    
+                .setTitle("DDoikybot Tutorial")
+                .setDescription("To start counting a streak in a channel, use `/register <streak_name>` in that channel.\nOnce that has been done, increase your streak daily using `/idrew`.");
+
             const statsEmbed = new EmbedBuilder().setColor(0xffff00)
             .setTitle("Statistics")
             .setDescription(`DDoiky Status: ${data.server.ddoiky_active == 1 ? `active` : `inactive` }`)
             .addFields( {name: "Last Updated:", value: `<t:${Math.floor(Date.now()/1000)}:R>`},
                         {name: "Deadline:", value: `<t:${Math.floor(Math.floor((Date.now() + cron.timeout("0 0 5 * * *"))/1000))}:R>`});
+
+
         
-            let allEmbeds = [statsEmbed];
+            let allEmbeds = [infoEmbed, statsEmbed];
         
             let allFields = [];
             data.streaks.forEach(streak => {

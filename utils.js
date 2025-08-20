@@ -42,63 +42,62 @@ function checkChannel(channel, /**@type {GuildBasedChannel} */ dcChannel){
 
 function updateStatsMessage(/** @type {Guild} */ guild){
     return dbUtils.getServerStatMessage(guild).then(msg => {
-        if (msg == null) return this.createStatsMessage(guild);
-        return this.getStatusEmbeds(guild.id).then(embeds => {
+        if (msg == null) return createStatsMessage(guild);
+        return getStatusEmbeds(guild.id).then(embeds => {
             return msg.edit({embeds:embeds});
         });
     }).catch(console.error);
 }
 
-module.exports = {
-    getStatusEmbeds(serverID){
-        return dbUtils.getAllServerData(serverID).then( data => {
-            if (!data.server.id){
-                return [new EmbedBuilder().setColor(0xffff00).setTitle("DDoiky Not Setup").setDescription("Use `/initialise` to setup ddoikyBot")]
-            }
-
-            const infoEmbed = new EmbedBuilder()
-                .setColor(0x00ff00)    
-                .setTitle("DDoikybot Tutorial")
-                .setDescription("To start counting a streak in a channel, use `/register <streak_name>` in that channel.\nOnce that has been done, increase your streak daily using `/idrew`.");
-
-            const statsEmbed = new EmbedBuilder().setColor(0xffff00)
-            .setTitle("Statistics")
-            .setDescription(`DDoiky Status: ${data.server.ddoiky_active == 1 ? `active` : `inactive` }`)
-            .addFields( {name: "Last Updated:", value: `<t:${Math.floor(Date.now()/1000)}:R>`},
-                        {name: "Deadline:", value: `<t:${Math.floor(Math.floor((Date.now() + cron.timeout("0 0 5 * * *"))/1000))}:R>`});
-
-
-        
-            let allEmbeds = [infoEmbed, statsEmbed];
-        
-            let allFields = [];
-            data.streaks.forEach(streak => {
-                allFields.push(
-                    { name: streak.name, value: data.server.ddoiky_active==1 ? streak.is_alive == 1 ? 'Alive' : 'Dead' : "", inline: true },
-                    { name: 'Streak', value: streak.streak.toString(), inline: true },
-                    { name: 'High Score', value: streak.high_streak.toString(), inline: true },
-                )
-            });
-
-            while (allFields.length > 0){
-                const newEmbed = new EmbedBuilder()
-                    .setColor(0xffff00)
-                    .setTitle(".                                                           .")
-                    .addFields(allFields.splice(Math.max(allFields.length - 3*8, 0)));
-                allEmbeds.push(newEmbed);
-            }
-            return allEmbeds;
+function getStatusEmbeds(serverID){
+    return dbUtils.getAllServerData(serverID).then( data => {
+        if (!data.server.id){
+            return [new EmbedBuilder().setColor(0xffff00).setTitle("DDoiky Not Setup").setDescription("Use `/initialise` to setup ddoikyBot")]
+        }
+        const infoEmbed = new EmbedBuilder()
+            .setColor(0x00ff00)    
+            .setTitle("DDoikybot Tutorial")
+            .setDescription("To start counting a streak in a channel, use `/register <streak_name>` in that channel.\nOnce that has been done, increase your streak daily using `/idrew`.");
+        const statsEmbed = new EmbedBuilder().setColor(0xffff00)
+        .setTitle("Statistics")
+        .setDescription(`DDoiky Status: ${data.server.ddoiky_active == 1 ? `active` : `inactive` }`)
+        .addFields( {name: "Last Updated:", value: `<t:${Math.floor(Date.now()/1000)}:R>`},
+                    {name: "Deadline:", value: `<t:${Math.floor(Math.floor((Date.now() + cron.timeout("0 0 5 * * *"))/1000))}:R>`});
+    
+        let allEmbeds = [infoEmbed, statsEmbed];
+    
+        let allFields = [];
+        data.streaks.forEach(streak => {
+            allFields.push(
+                { name: streak.name, value: data.server.ddoiky_active==1 ? streak.is_alive == 1 ? 'Alive' : 'Dead' : "", inline: true },
+                { name: 'Streak', value: streak.streak.toString(), inline: true },
+                { name: 'High Score', value: streak.high_streak.toString(), inline: true },
+            )
         });
-    },
+        while (allFields.length > 0){
+            const newEmbed = new EmbedBuilder()
+                .setColor(0xffff00)
+                .setTitle(".                                                           .")
+                .addFields(allFields.splice(Math.max(allFields.length - 3*8, 0)));
+            allEmbeds.push(newEmbed);
+        }
+        return allEmbeds;
+    });
+}
+
+function createStatsMessage(/** @type {Guild} */ guild){
+    return dbUtils.getServerMainChannel(guild).then( c => {
+        if (c) return getStatusEmbeds(guild.id).then(embeds => {
+            return c.send({embeds: embeds})
+        });
+        return null;
+    }).catch(console.error);
+}
+
+module.exports = {
+    getStatusEmbeds,
     updateStatsMessage,
-    createStatsMessage(/** @type {Guild} */ guild){
-        return dbUtils.getServerMainChannel(guild).then( c => {
-            if (c) return this.getStatusEmbeds(guild.id).then(embeds => {
-                return c.send({embeds: embeds})
-            });
-            return null;
-        }).catch(console.error);
-    },
+    createStatsMessage,
     ensureServerExists(interaction, callback){
         ensureServerExists(interaction, callback);
     },

@@ -2,6 +2,17 @@ const { Guild } = require("discord.js");
 const myDB = require("./myDB");
 const utils = require("./utils");
 
+function serverExists(serverID){
+    const selectionSQL = `
+        SELECT EXISTS (
+            SELECT 1
+            FROM Servers
+            WHERE id = ?) as tmp`
+    return myDB.fetchFirst(selectionSQL, [serverID]).then(v => {
+        return v[0].tmp == 1;
+    });
+}
+
 module.exports = {
     getServerMainChannel(/** @type {Guild} */ guild){
         const query = `SELECT main_channel FROM Servers WHERE id = ?`;
@@ -54,16 +65,15 @@ module.exports = {
                 WHERE id = ?`;
         return myDB.executesql(updateSQL, [mainChannelID, serverID]);
     },
-    serverExists(serverID){
-        const selectionSQL = `
-            SELECT EXISTS (
-                SELECT 1
-                FROM Servers
-                WHERE id = ?) as tmp`
-        return myDB.fetchFirst(selectionSQL, [serverID]).then(v => {
-            return v[0].tmp == 1;
-        });
+    renameChannel(channelID, newName){
+        const com = `
+            UPDATE Channels
+            SET name = ?
+            WHERE id = ?`;
+        
+        return myDB.executesql(com, [newName, channelID]);
     },
+    serverExists,
     channelExists(channelID){
         const selectionSQL = `
             SELECT EXISTS (
@@ -81,7 +91,7 @@ module.exports = {
             FROM Channels 
             WHERE id = ? 
             OR (name = ? AND server_id = ?)) as tmp`;
-        return myDB.fetchFirst(eval, [channelID, name, serverID]).then(v => v[0].tmp == 0 && this.serverExists(serverID));
+        return myDB.fetchFirst(eval, [channelID, name, serverID]).then(v => v[0].tmp == 0 && serverExists(serverID));
     },
     getAllServerChannels(serverID){
         const query = `
